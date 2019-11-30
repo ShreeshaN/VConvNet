@@ -1,0 +1,24 @@
+{
+  "run_name": "convnet",
+  "epochs": 5000000,
+  "num_classes": 5,
+  "batch_size": 32,
+  "learning_rate": 0.0001,
+  "variable_net": false,
+  "images_basepath": "/Users/badgod/badgod_documents/ImageDataset/same_size_input/images/",
+  "train_data_file": "/Users/badgod/badgod_documents/ImageDataset/same_size_input/csv/train.csv",
+  "test_data_file": "/Users/badgod/badgod_documents/ImageDataset/same_size_input/csv/test.csv",
+  "network_save_path": "trained_models/",
+  "tensorboard_summary_path": "tensorboard_summary",
+  "network_restore_path": "trained_models/convnet_80.pt",
+  "normalise": true,
+  "class_mappings": {
+    "rose": 0,
+    "tulip": 1,
+    "daisy": 2,
+    "dandelion": 3,
+    "sunflower": 4
+  },
+  "network_save_interval": 20,
+  "dropout": 0.25
+}

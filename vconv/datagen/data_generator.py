@@ -13,13 +13,14 @@ Description:
 import cv2
 import glob
 import numpy as np
+import pandas as pd
 import os
 
 sizes = set()
 
 
-def resize_images_and_save(image_folder, results_csv, label, width_list=(1024, 512, 256, 768), variable=False):
-    result_path = '/Users/badgod/badgod_documents/ImageDataset/same_size_input/images'
+def resize_images_and_save(image_folder, results_csv, label, width_list=(1024, 512, 256, 768), variable=True):
+    result_path = '/Users/badgod/badgod_documents/ImageDataset1/variable_input/images'
     for i, image_path in enumerate(glob.glob(image_folder + '/*')):
 
         image = cv2.imread(image_path)
@@ -40,16 +41,18 @@ def resize_images_and_save(image_folder, results_csv, label, width_list=(1024, 5
             sizes.add(resized_image.shape)
         new_image_path = result_path + '/' + image_path.split('/')[-1]
         cv2.imwrite(new_image_path, resized_image)
-        print(new_image_path, ',', label, file=results_csv)
+        string_to_write = new_image_path.split('/')[-1] + ',' + label
+        print(string_to_write, file=results_csv)
         print('Done ', i)
 
 
-csv_results_path = '/Users/badgod/badgod_documents/ImageDataset/same_size_input/csv/result.csv'
+csv_results_path = '/Users/badgod/badgod_documents/ImageDataset1/variable_input/csv/result.csv'
 if os.path.exists(csv_results_path):
     csv_results_file = open(csv_results_path, 'a')
 else:
     csv_results_file = open(csv_results_path, 'w')
-    print('Images', ',', 'Label', file=csv_results_file)
+    string_to_write = 'Images,Label'
+    print('Images,Label', file=csv_results_file)
 
 base_folder = '/Users/badgod/Downloads/flowers/'
 folders = ['dandelion', 'rose', 'tulip', 'daisy', 'sunflower']
@@ -59,3 +62,12 @@ for folder in folders:
     resize_images_and_save(image_folder, csv_results_file, folder)
 
 print(sizes)
+
+train_split = 0.8
+data = pd.read_csv(csv_results_path)
+data = data.sample(frac=1)
+tr = data[:int(len(data) * train_split)]
+te = data[-int(len(data) * 1 - train_split):]
+path = '/'.join(csv_results_path.split('/')[:-1])
+tr.to_csv(path + '/train.csv', index=False)
+te.to_csv(path + '/test.csv', index=False)
