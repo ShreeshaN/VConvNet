@@ -22,6 +22,7 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 import math
+import torch.nn as nn
 
 
 class ConvVisualiser:
@@ -32,6 +33,7 @@ class ConvVisualiser:
         self.network = None
         classes = list(args.class_mappings)
         self.class_mappings = {class_: i for i, class_ in enumerate(classes)}
+        self.reverse_class_mappings = {i: class_ for i, class_ in enumerate(classes)}
         self.num_classes = len(classes)
         self.network_restore_path = args.network_restore_path
         self.dropout = 0
@@ -68,17 +70,52 @@ class ConvVisualiser:
         print('Saving kernal plots ', kernal_name)
         fig.savefig(self.image_folder + '/' + str(kernal_name) + '.jpg')
 
+    def plot_kernals(self):
+        convs = ['conv1.weight', 'conv2.weight', 'conv3.weight']
+        for conv in convs:
+            print('Plotting ', conv)
+            kernal = self.network.state_dict()[conv]
+            if conv != 'conv1.weight':
+                print(kernal.numpy().shape)
+                kernal = np.take(kernal.numpy(), 1, axis=0)
+                print(kernal.shape)
+            else:
+                kernal = kernal.squeeze(1).detach().numpy()
+            total_cols = 4
+            total_rows = kernal.shape[0] // total_cols
+            fig = plt.figure()
+            fig.subplots_adjust(hspace=0.4, wspace=0.4)
+            for i, activation_map in enumerate(kernal):
+                ax = fig.add_subplot(total_rows, total_cols, i + 1)
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+                ax.imshow(activation_map, interpolation="nearest")
+            print('Saving kernal plots ', conv)
+            fig.savefig(self.visualiser_path + '/' + str(conv) + '.jpg')
+
     def run(self):
-        for file in glob.glob(self.images_to_visualise + "/*"):
-            print('Reading image ', file)
-            image = cv2.imread(file, 0)
-            image_name = file.split("/")[-1]
-            self.image_folder = self.visualiser_path + "/" + image_name.split('.')[0]
-            create_dirs([self.image_folder])
-            cp_file(file, self.image_folder + '/' + image_name)
-            kernals = self.network.forward_pass_kernels(image)
-            for i, kernal in enumerate(kernals):
-                self.plot_activations(kernal, i)
+        with torch.no_grad():
+            print(self.images_to_visualise + "/*")
+            print(glob.glob(self.images_to_visualise + "/*"))
+            for file in glob.glob(self.images_to_visualise + "/*"):
+                print('Reading image ', file)
+                image = cv2.imread(file, 0)
+                image_name = file.split("/")[-1]
+                self.image_folder = self.visualiser_path + "/" + image_name.split('.')[0]
+                create_dirs([self.image_folder])
+                cp_file(file, self.image_folder + '/' + image_name)
+                kernals = self.network.forward_pass_kernels(image)
+                for i, kernal in enumerate(kernals):
+                    self.plot_activations(kernal, i)
+                if self.variable_net:
+                    prediction = torch.argmax(
+                            nn.Softmax()(self.network(tensor(image).unsqueeze(0)))).item()
+                else:
+                    prediction = torch.argmax(
+                            nn.Softmax()(self.network(tensor(image).unsqueeze(0).float()))).item()
+
+                print('Prediction - ', self.reverse_class_mappings[prediction])
+                print("**" * 50)
 
 
 if __name__ == '__main__':
@@ -95,3 +132,4 @@ if __name__ == '__main__':
     configs = AttributeDict(configs)
     visualiser = ConvVisualiser(configs)
     visualiser.run()
+    # visualiser.plot_kernals()

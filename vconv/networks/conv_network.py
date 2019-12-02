@@ -43,13 +43,13 @@ class SmallConvNet(nn.Module):
         a Tensor of output data. We can use Modules defined in the constructor as
         well as arbitrary operators on Tensors.
         """
-        x = tensor(x)
+        x = tensor(x).unsqueeze(1).float()
         x = F.relu(self.conv1(x))
         x = self.pool1(x)
         x = F.relu(self.conv2(x))
         x = self.pool2(x)
         x = F.relu(self.conv3(x))
-        x = x.view(-1, 2 * 2 * 64)
+        x = x.view(-1, x.shape[1:].numel())
         x = self.dropout(x)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -144,3 +144,10 @@ class VariableConvNet(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+
+    def forward_pass_kernels(self, x):
+        x = tensor(x).unsqueeze(0).unsqueeze(0).float()
+        conv1 = F.relu(self.conv1(x))
+        conv2 = F.relu(self.conv2(conv1))
+        conv3 = F.relu(self.conv3(conv2))
+        return [conv1, conv2, conv3]
